@@ -10,9 +10,12 @@ class Scene(QGraphicsScene):
     def __init__(self,board):
         super().__init__()
 
-        self.grid = board.grid
+        origGrid = board.grid.copy()
 
-        self.font = QFont('Sand Serif', pointSize = 40)
+        self.origGrid = origGrid
+        self.board = board
+
+        self.font = QFont('Sans Serif', pointSize = 40)
         self.pen = QPen()
         self.getMouseTracking = True
         self.drawLines()
@@ -39,7 +42,7 @@ class Scene(QGraphicsScene):
             rectRow = []
             numRow = []
             for j in range(9):
-                newRect = QRectF(j*60,i*60,60,60)
+                newRect = QRectF(i*60,j*60,60,60)
                 newRectItem = QGraphicsRectItem()
                 newRectItem.setRect(newRect)
                 self.addItem(newRectItem)
@@ -56,22 +59,13 @@ class Scene(QGraphicsScene):
         self.numGrid = numGrid
 
 
-
-        # num = QGraphicsTextItem("5",rectGrid[0][0])
-        # num2 = QGraphicsTextItem("7", rectGrid[0][1])
-        # num.setPlainText("6")
-        # num.setFont(self.font)
-        # num2.setFont(self.font)
-        # num2.setTransform(QTransform(1,0,0,1,70,0))
-        # print(rectGrid[0][1].x())
-
-
     def setNums(self):
-        for x,row in enumerate(self.grid):
+        self.defaultSet = []
+        for x,row in enumerate(self.board.grid):
             for y,i in enumerate(row):
                 if (i != 0):
                     self.numGrid[x][y].setPlainText(str(i))
-
+                    self.defaultSet.append((x,y))
 
 
 
@@ -89,7 +83,9 @@ class Viewer(QGraphicsView):
         self.customContextMenuRequested.connect(self.onContextMenu)
 
         self.cmenu = QMenu(self)
-        self.checker = self.cmenu.addAction("CheckBoard")
+        self.checker = self.cmenu.addAction("Check Board")
+        self.resetboard = self.cmenu.addAction("Reset Board")
+        self.solveboard = self.cmenu.addAction("Solve Board")
 
 
     def initGui(self):
@@ -99,8 +95,7 @@ class Viewer(QGraphicsView):
         self.show()
 
     def mousePressEvent(self, e):
-        #gridX = int(e.pos[0])//60
-        #gridY = int(e.pos[1])//60
+
         if e.button() == Qt.LeftButton:
 
             gridX = e.x()//60
@@ -112,18 +107,9 @@ class Viewer(QGraphicsView):
 
                 if ok:
 
-                    if board.checkPosition(int(input),(gridX,gridY)):
-                        scene.numGrid[gridX][gridY].setDefaultTextColor(QColor(0,0,0))
-                        scene.numGrid[gridX][gridY].setPlainText(input)
-                        scene.board.grid[gridX][gridY] = int(input)
-
-
-                    else:
-                        scene.numGrid[gridX][gridY].setDefaultTextColor(QColor(255,0,0))
-                        scene.numGrid[gridX][gridY].setPlainText(input)
-                        scene.board.grid[gridX][gridY] = int(input)
-
-
+                    scene.numGrid[gridY][gridX].setDefaultTextColor(QColor(0,0,0))
+                    scene.numGrid[gridY][gridX].setPlainText(input)
+                    scene.board.grid[gridY][gridX] = int(input)
 
 
     def onContextMenu(self, pos):
@@ -132,8 +118,37 @@ class Viewer(QGraphicsView):
 
         if action == self.checker:
             message = QMessageBox()
-            message.setText("asdufha")
-            message.exec_()
+
+            if  scene.board.isValidBoard():
+                message.setText("Solved!")
+                message.exec_()
+
+            else:
+                for x,row in enumerate(scene.board.grid):
+                    for y,num in enumerate(row):
+                        if ((y,x) not in scene.defaultSet):
+                            scene.numGrid[y][x].setDefaultTextColor(QColor(255,0,0))
+
+
+                message.setText("Nope")
+                message.exec_()
+
+        elif action == self.resetboard:
+
+            for x,row in enumerate(scene.numGrid):
+                for y,i in enumerate(row):
+
+                    if (y,x) not in scene.defaultSet:
+                        scene.numGrid[y][x].setPlainText("")
+
+        elif action == self.solveboard:
+
+            scene.board.solveBoard()
+
+            for x,row in enumerate(scene.numGrid):
+                for y,i in enumerate(row):
+
+                    scene.numGrid[y][x].setPlainText(str(scene.board.grid[y][x]))
 
 
 

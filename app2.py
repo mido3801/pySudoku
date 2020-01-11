@@ -2,17 +2,18 @@ class Board():
 
     def __init__(self):
 
-        self.grid = [[0,7,1,0,9,0,8,0,0],
-                [0,0,0,3,0,6,0,0,0],
-                [4,9,0,0,0,0,7,0,5],
-                [0,1,0,9,0,0,0,0,0],
-                [9,0,2,0,0,0,6,0,3],
-                [0,0,0,0,0,8,0,2,0],
-                [8,0,5,0,0,0,0,7,6],
-                [0,0,0,6,0,7,0,0,0],
-                [0,0,7,0,4,0,3,5,0]]
+        self.grid = [[5,3,0,0,7,0,0,0,0],
+                    [6,0,0,1,9,5,0,0,0],
+                    [0,9,8,0,0,0,0,6,0],
+                    [8,0,0,0,6,0,0,0,3],
+                    [4,0,0,8,0,3,0,0,1],
+                    [7,0,0,0,2,0,0,0,6],
+                    [0,6,0,0,0,0,2,8,0],
+                    [0,0,0,4,1,9,0,0,5],
+                    [0,0,0,0,8,0,0,7,9]]
 
     def isValidBoard(self):
+        #checks rows for repeats, then columns, then the subgrids. If finds a duplicate returns false
         for x,row in enumerate(self.grid):
             rowSet = set()
             for y,num in enumerate(row):
@@ -76,29 +77,31 @@ class Board():
 
 
     def nextEmpty(self):
+        #finds next empty space (used for solver)
         for x in range(len(self.grid)):
             for y in range(len(self.grid[0])):
                 if self.grid[x][y] == 0:
-                    return(x, y) #row,column
+                    return(x, y)
 
         return False
 
 
-    def boardSolver(self):
-
-        toSolve = self.nextEmpty
-        if not toSolve:
+    def solveBoard(self):
+        toSolve = self.nextEmpty()
+        if toSolve == False:
             return True
         else:
-            row,col = toSolve
+            x,y = toSolve
 
+            #tries a value in open spots, then calls function recursively so if
+            # a roadblock is hit it backtracks
         for i in range(1,10):
-            if checkPosition(self.grid,i,(row,col)):
-                self.grid[row][col] = i
+            if self.checkPosition(i,(x,y)):
+                self.grid[x][y] = i
 
-                if self.boardSolver:
+                if self.solveBoard():
                     return True
 
-                board[row][col] = 0
+                self.grid[x][y] = 0
 
         return False
