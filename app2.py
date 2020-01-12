@@ -105,3 +105,6 @@ class Board():
                 self.grid[x][y] = 0
 
         return False
+
+    def resetBoard(self):
+        self.__init__()

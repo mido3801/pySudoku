@@ -98,18 +98,19 @@ class Viewer(QGraphicsView):
 
         if e.button() == Qt.LeftButton:
 
-            gridX = e.x()//60
-            gridY = e.y()//60
+            gridCol = e.x()//60
+            gridRow = e.y()//60
 
-            if (gridX <= 8) and (gridY <= 8):
+            if (gridCol <= 8) and (gridRow <= 8):
 
                 input, ok = QInputDialog.getText(self, "Guess", "Enter Number: ")
 
                 if ok:
 
-                    scene.numGrid[gridY][gridX].setDefaultTextColor(QColor(0,0,0))
-                    scene.numGrid[gridY][gridX].setPlainText(input)
-                    scene.board.grid[gridY][gridX] = int(input)
+                    self.scene.numGrid[gridRow][gridCol].setDefaultTextColor(QColor(0,0,0))
+                    self.scene.numGrid[gridRow][gridCol].setPlainText(input)
+                    if self.scene.board.checkPosition(int(input),(gridRow,gridCol)):
+                        self.scene.board.grid[gridRow][gridCol] = int(input)
 
 
     def onContextMenu(self, pos):
@@ -119,36 +120,38 @@ class Viewer(QGraphicsView):
         if action == self.checker:
             message = QMessageBox()
 
-            if  scene.board.isValidBoard():
+            if  self.scene.board.isValidBoard():
                 message.setText("Solved!")
                 message.exec_()
 
             else:
-                for x,row in enumerate(scene.board.grid):
+                for x,row in enumerate(self.scene.board.grid):
                     for y,num in enumerate(row):
-                        if ((y,x) not in scene.defaultSet):
-                            scene.numGrid[y][x].setDefaultTextColor(QColor(255,0,0))
+                        if ((x,y) not in self.scene.defaultSet):
+                            if not self.scene.board.checkPosition(num,(x,y)):
+                                self.scene.numGrid[x][y].setDefaultTextColor(QColor(255,0,0))
 
 
                 message.setText("Nope")
                 message.exec_()
 
         elif action == self.resetboard:
-
-            for x,row in enumerate(scene.numGrid):
+            self.scene.board.resetBoard()
+            for x,row in enumerate(self.scene.numGrid):
                 for y,i in enumerate(row):
 
-                    if (y,x) not in scene.defaultSet:
-                        scene.numGrid[y][x].setPlainText("")
+                    if (x,y) not in self.scene.defaultSet:
+                        self.scene.numGrid[x][y].setDefaultTextColor(QColor(0,0,0))
+                        self.scene.numGrid[x][y].setPlainText("")
+
 
         elif action == self.solveboard:
+            self.scene.board.solveBoard()
 
-            scene.board.solveBoard()
-
-            for x,row in enumerate(scene.numGrid):
+            for x,row in enumerate(self.scene.numGrid):
                 for y,i in enumerate(row):
-
-                    scene.numGrid[y][x].setPlainText(str(scene.board.grid[y][x]))
+                    #scene.numGrid[y][x].setDefaultTextColor(QColor(0,0,0))
+                    self.scene.numGrid[x][y].setPlainText(str(self.scene.board.grid[x][y]))
 
 
 
