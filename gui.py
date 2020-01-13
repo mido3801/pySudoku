@@ -1,7 +1,7 @@
 import sys
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QPen, QColor, QFont, QTransform
-from PyQt5.QtCore import QRectF, Qt
+from PyQt5.QtCore import QRectF, Qt, QTimer
 from app2 import Board
 
 
@@ -54,9 +54,23 @@ class Scene(QGraphicsScene):
             rectGrid.append(rectRow)
             numGrid.append(numRow)
 
-
-        self.rectGrid = rectGrid
         self.numGrid = numGrid
+        self.possNums = []
+
+        for x,row in enumerate(self.numGrid):
+            possNumsRow = []
+            for y,num in enumerate(row):
+                possNumsArray = []
+                for i in range(2):
+                    for j in range(2):
+                        possNum = QGraphicsTextItem("")
+                        possNum.setTransform(QTransform(1,0,0,1,(self.numGrid[x][y].transform().dx())+(i*46)-10,(self.numGrid[x][y].transform().dy())+(j*45)-5))
+                        self.addItem(possNum)
+                        possNumsArray.append(possNum)
+
+                possNumsRow.append(possNumsArray)
+            self.possNums.append(possNumsRow)
+
 
 
     def setNums(self):
@@ -98,19 +112,19 @@ class Viewer(QGraphicsView):
 
         if e.button() == Qt.LeftButton:
 
-            gridCol = e.x()//60
-            gridRow = e.y()//60
+            self.gridCol = e.x()//60
+            self.gridRow = e.y()//60
 
-            if (gridCol <= 8) and (gridRow <= 8):
+            if (self.gridCol <= 8) and (self.gridRow <= 8):
 
-                input, ok = QInputDialog.getText(self, "Guess", "Enter Number: ")
+                self.guesswindow = guess2Window(self)
+                self.guesswindow.show()
 
-                if ok:
-
-                    self.scene.numGrid[gridRow][gridCol].setDefaultTextColor(QColor(0,0,0))
-                    self.scene.numGrid[gridRow][gridCol].setPlainText(input)
-                    if self.scene.board.checkPosition(int(input),(gridRow,gridCol)):
-                        self.scene.board.grid[gridRow][gridCol] = int(input)
+                # self.scene.numGrid[gridRow][gridCol].setDefaultTextColor(QColor(0,0,0))
+                # self.scene.numGrid[gridRow][gridCol].setPlainText(self.guesswindow.choice)
+                #
+                # if self.scene.board.checkPosition(int(self.guesswindow.choice),(gridRow,gridCol)):
+                #     self.scene.board.grid[gridRow][gridCol] = int(self.guesswindow.choice)
 
 
     def onContextMenu(self, pos):
@@ -128,8 +142,8 @@ class Viewer(QGraphicsView):
                 for x,row in enumerate(self.scene.board.grid):
                     for y,num in enumerate(row):
                         if ((x,y) not in self.scene.defaultSet):
-                            if not self.scene.board.checkPosition(num,(x,y)):
-                                self.scene.numGrid[x][y].setDefaultTextColor(QColor(255,0,0))
+                            if self.scene.board.checkPosition(num,(x,y)) == False:
+                                self.scene.numGrid[x][y].setHtml("<font color = \"red\">{}</font>".format(self.scene.numGrid[x][y].toPlainText()))
 
 
                 message.setText("Nope")
@@ -155,10 +169,126 @@ class Viewer(QGraphicsView):
 
 
 
+class guessWindow(QWidget):
+
+    def __init__(self,viewer):
+        super().__init__()
+
+        self.viewer = viewer
+        self.initGui()
+
+    def initGui(self):
+
+        grid = QGridLayout()
+        count = 1
+        for  x in range(3):
+            for y in range(3):
+                button = QPushButton(str(count))
+                button.setFixedSize(60,60)
+                button.clicked.connect(self.buttonClicked)
+                grid.addWidget(button,x,y)
+                count += 1
+        self.setLayout(grid)
+        self.setGeometry(300,300,200,200)
+
+    def buttonClicked(self):
+
+        self.sender = self.sender()
+        self.viewer.scene.numGrid[self.viewer.gridRow][self.viewer.gridCol].setDefaultTextColor(QColor(0,0,0))
+        self.viewer.scene.numGrid[self.viewer.gridRow][self.viewer.gridCol].setPlainText(self.sender.text())
+        self.viewer.scene.board.grid[self.viewer.gridRow][self.viewer.gridCol] = int(self.sender.text())
+        self.close()
+
+
+class guess2Window(QWidget):
+
+    def __init__(self,viewer):
+        super().__init__()
+
+        self.viewer = viewer
+        self.numchecked = 0
+        self.guessed = []
+        self.initGui()
+        self.guess = False
+
+    def initGui(self):
+
+        self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(self.onContextMenu)
+
+        self.cmenu = QMenu(self)
+
+        self.guessAct = QAction("Guess", self)
+        self.guessAct.setStatusTip('For when you\'re not sure')
+        self.guessAct.setCheckable(True)
+        self.cmenu.addAction(self.guessAct)
+
+        grid = QGridLayout()
+        count = 1
+        for x in range(3):
+            for y in range(3):
+                button = QPushButton(str(count))
+                button.setFixedSize(60,60)
+                button.clicked.connect(self.buttonClicked)
+                grid.addWidget(button, x, y)
+                count += 1
+        self.setLayout(grid)
+        self.setGeometry(300,300,200,200)
+
+    def mousePressEvent(self,e):
+        pass
+
+
+    def buttonClicked(self):
+
+        if self.guess == False:
+
+            self.sender = self.sender()
+            self.viewer.scene.numGrid[self.viewer.gridRow][self.viewer.gridCol].setDefaultTextColor(QColor(0,0,0))
+            self.viewer.scene.numGrid[self.viewer.gridRow][self.viewer.gridCol].setPlainText(self.sender.text())
+            self.viewer.scene.board.grid[self.viewer.gridRow][self.viewer.gridCol] = int(self.sender.text())
+
+        else:
+            sender = self.sender()
+            if sender.text() not in self.guessed:
+
+                self.viewer.scene.possNums[self.viewer.gridRow][self.viewer.gridCol][self.numchecked].setPlainText(sender.text())
+                self.numchecked+=1
+                if self.numchecked == 4: self.numchecked = 0
+                self.guessed.append(sender.text())
+            else:
+
+                self.guessed.remove(sender.text())
+                for textObj in self.viewer.scene.possNums[self.viewer.gridRow][self.viewer.gridCol]:
+                    if textObj.toPlainText() == sender.text():
+                        textObj.setPlainText("")
+                        self.numchecked -= 1
+                        break
+
+    def onContextMenu(self, pos):
+
+        action = self.cmenu.exec_(self.mapToGlobal(pos))
+
+        if action == self.guessAct:
+            self.guess = not self.guess
+            checkstat = self.guessAct.isChecked()
+            print(checkstat)
+            if checkstat == True:
+                print("here2")
+                self.guessAct.setChecked(True)
+            else:
+                self.guessAct.setChecked(False)
+
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     board = Board()
     scene = Scene(board)
     view = Viewer(scene)
     #view.setScene(scene)
+
+    timer = QTimer()
+    timer.timeout.connect(lambda: None)
+    timer.start(100)
+
     sys.exit(app.exec_())
