@@ -78,7 +78,8 @@ class Scene(QGraphicsScene):
         for x,row in enumerate(self.board.grid):
             for y,i in enumerate(row):
                 if (i != 0):
-                    self.numGrid[x][y].setPlainText(str(i))
+                    #self.numGrid[x][y].setPlainText(str(i))
+                    self.numGrid[x][y].setHtml("<font color = \"DarkBlue\">{}</font>".format(str(i)))
                     self.defaultSet.append((x,y))
 
 
@@ -168,38 +169,6 @@ class Viewer(QGraphicsView):
                     self.scene.numGrid[x][y].setPlainText(str(self.scene.board.grid[x][y]))
 
 
-
-class guessWindow(QWidget):
-
-    def __init__(self,viewer):
-        super().__init__()
-
-        self.viewer = viewer
-        self.initGui()
-
-    def initGui(self):
-
-        grid = QGridLayout()
-        count = 1
-        for  x in range(3):
-            for y in range(3):
-                button = QPushButton(str(count))
-                button.setFixedSize(60,60)
-                button.clicked.connect(self.buttonClicked)
-                grid.addWidget(button,x,y)
-                count += 1
-        self.setLayout(grid)
-        self.setGeometry(300,300,200,200)
-
-    def buttonClicked(self):
-
-        self.sender = self.sender()
-        self.viewer.scene.numGrid[self.viewer.gridRow][self.viewer.gridCol].setDefaultTextColor(QColor(0,0,0))
-        self.viewer.scene.numGrid[self.viewer.gridRow][self.viewer.gridCol].setPlainText(self.sender.text())
-        self.viewer.scene.board.grid[self.viewer.gridRow][self.viewer.gridCol] = int(self.sender.text())
-        self.close()
-
-
 class guess2Window(QWidget):
 
     def __init__(self,viewer):
@@ -247,6 +216,9 @@ class guess2Window(QWidget):
             self.viewer.scene.numGrid[self.viewer.gridRow][self.viewer.gridCol].setDefaultTextColor(QColor(0,0,0))
             self.viewer.scene.numGrid[self.viewer.gridRow][self.viewer.gridCol].setPlainText(self.sender.text())
             self.viewer.scene.board.grid[self.viewer.gridRow][self.viewer.gridCol] = int(self.sender.text())
+            for i in self.viewer.scene.possNums[self.viewer.gridRow][self.viewer.gridCol]:
+                i.setPlainText("")
+            self.close()
 
         else:
             sender = self.sender()
@@ -272,9 +244,7 @@ class guess2Window(QWidget):
         if action == self.guessAct:
             self.guess = not self.guess
             checkstat = self.guessAct.isChecked()
-            print(checkstat)
             if checkstat == True:
-                print("here2")
                 self.guessAct.setChecked(True)
             else:
                 self.guessAct.setChecked(False)
